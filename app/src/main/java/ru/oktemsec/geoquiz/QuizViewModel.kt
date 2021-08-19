@@ -1,7 +1,5 @@
 package ru.oktemsec.geoquiz
 
-import android.util.Log
-import android.widget.Button
 import androidx.lifecycle.ViewModel
 
 private const val TAG = "QuizViewModel"
