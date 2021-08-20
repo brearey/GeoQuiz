@@ -1,5 +1,6 @@
 package ru.oktemsec.geoquiz
 
+import android.app.Activity
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -15,6 +16,7 @@ import kotlin.math.round
 private const val TAG = "MainActivity"
 private const val KEY_INDEX = "index"
 private const val KEY_SCORES = "scores"
+private const val REQUEST_CODE_CHEAT = 0
 
 class MainActivity : AppCompatActivity() {
 
@@ -63,9 +65,12 @@ class MainActivity : AppCompatActivity() {
 
         //cheat button
         cheatButton.setOnClickListener {
-            val answerIsTrue = quizViewModel.currentQuestionAnswer
+            /*val answerIsTrue = quizViewModel.currentQuestionAnswer
             val intent = CheatActivity.newIntent(this@MainActivity, answerIsTrue)
-            startActivity(intent)
+            startActivityForResult(intent, REQUEST_CODE_CHEAT)*/
+
+
+
         }
 
         //navigation buttons listeners
@@ -87,21 +92,6 @@ class MainActivity : AppCompatActivity() {
         updateQuestion()
     }
 
-    override fun onStart() {
-        super.onStart()
-        Log.d(TAG, "onStart called")
-    }
-
-    override fun onResume() {
-        super.onResume()
-        Log.d(TAG, "onResume called")
-    }
-
-    override fun onPause() {
-        super.onPause()
-        Log.d(TAG, "onPause called")
-    }
-
     override fun onSaveInstanceState(savedInstanceState: Bundle) {
         super.onSaveInstanceState(savedInstanceState)
         Log.i(TAG, "OnSaveInstanceState")
@@ -109,14 +99,13 @@ class MainActivity : AppCompatActivity() {
         savedInstanceState.putInt(KEY_SCORES, quizViewModel.scores)
     }
 
-    override fun onStop() {
-        super.onStop()
-        Log.d(TAG, "onStop called")
-    }
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
 
-    override fun onDestroy() {
-        super.onDestroy()
-        Log.d(TAG, "onDestroy called")
+        if (resultCode != Activity.RESULT_OK) return
+        if (requestCode == REQUEST_CODE_CHEAT) {
+            quizViewModel.isCheater = data?.getBooleanExtra(EXTRA_ANSWER_SHOWN, false) ?: false
+        }
     }
 
     private fun updateQuestion() {
@@ -129,17 +118,21 @@ class MainActivity : AppCompatActivity() {
         questionTextView.setText(questionTextResId)
         trueButton.isEnabled = true
         falseButton.isEnabled = true
+        quizViewModel.isCheater = false
     }
 
     private fun checkAnswer(userAnswer: Boolean) {
         val correctAnswer = quizViewModel.currentQuestionAnswer
 
-        val messageResId = if (userAnswer == correctAnswer) {
-            quizViewModel.scores++
+        if (userAnswer == correctAnswer) {
             Log.d(TAG, quizViewModel.getSizeQuestionBank().toString())
-            R.string.correct_toast
-        } else {
-            R.string.incorrect_toast
+            quizViewModel.scores++
+        }
+
+        val messageResId = when {
+            quizViewModel.isCheater     -> R.string.judgment_toast
+            userAnswer == correctAnswer -> R.string.correct_toast
+            else                        -> R.string.incorrect_toast
         }
 
         val toast = Toast.makeText(this, messageResId, Toast.LENGTH_SHORT)
