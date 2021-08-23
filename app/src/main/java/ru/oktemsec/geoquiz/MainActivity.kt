@@ -11,6 +11,16 @@ import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 import kotlin.math.round
 
 private const val TAG = "MainActivity"
@@ -18,7 +28,7 @@ private const val KEY_INDEX = "index"
 private const val KEY_SCORES = "scores"
 private const val REQUEST_CODE_CHEAT = 0
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), CoroutineScope {
 
     private lateinit var trueButton: Button
     private lateinit var falseButton: Button
@@ -26,6 +36,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var nextButton: ImageButton
     private lateinit var prevButton: ImageButton
     private lateinit var questionTextView: TextView
+
+    //Testing post request with KTOR and Coroutines
+    private var job: Job = Job()
+    //Testing post request with KTOR and Coroutines
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main + job
 
     //QuizViewModel instance
     private val quizViewModel: QuizViewModel by lazy {
@@ -36,6 +52,12 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "onCreate called")
         setContentView(R.layout.activity_main)
+
+        //Testing post request with KTOR and Coroutines
+        launch {
+            val result =  postRequest()
+            Log.d("TestPost", result)
+        }
 
         //Variables from savedInstance
         val currentIndex = savedInstanceState?.getInt(KEY_INDEX, 0) ?: 0
@@ -92,6 +114,12 @@ class MainActivity : AppCompatActivity() {
         updateQuestion()
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        //Testing post request with KTOR and Coroutines
+        job.cancel()
+    }
+
     override fun onSaveInstanceState(savedInstanceState: Bundle) {
         super.onSaveInstanceState(savedInstanceState)
         Log.i(TAG, "OnSaveInstanceState")
@@ -138,5 +166,20 @@ class MainActivity : AppCompatActivity() {
         val toast = Toast.makeText(this, messageResId, Toast.LENGTH_SHORT)
         toast.setGravity(Gravity.TOP, 0, 0)
         toast.show()
+    }
+    //Test post request
+    private suspend fun postRequest():String {
+
+        val response: HttpResponse = quizViewModel.client.submitForm(
+            url = "https://oktemsec.ru/water/order.php",
+            formParameters = Parameters.build {
+                append("make_order", "1")
+                append("phone", "89246628934")
+                append("address", "android studio")
+                append("countBottle", "10")
+                append("paymentMethod", "Мобильный банк")
+            }
+        )
+        return response.receive()
     }
 }
